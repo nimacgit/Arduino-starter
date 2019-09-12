@@ -2,6 +2,20 @@
 #include <SPI.h>
 #include <SD.h>
 
+/*
+ * SD card: 5V
+ ** MOSI - pin 11
+ ** MISO - pin 12
+ ** CLK - pin 13
+ ** CS - pin 4 (for MKRZero SD: SDCARD_SS_PIN)
+
+ DHT: 5V
+
+ moisSensor: 3.3V
+*/
+
+
+
 File myFile;
 unsigned long time;
 int collector = 0;
@@ -11,7 +25,6 @@ float h, t;
 #define MOIS2_PIN A2
 #define MOIS3_PIN A3
 DHT DHT_sens(DHT11_PIN, DHT11);           //datapin sensor to pin 10 Arduino
-
 
 void setup()
 {
@@ -41,21 +54,21 @@ void loop() {
   if(collector % 20000 == 0){
     myFile = SD.open("TermoHu.txt", FILE_WRITE);
     if (myFile) {
-//      Serial.println(time);
-//      Serial.print("T:");
-//      Serial.print(t);
-//      Serial.print("C ");
-//      Serial.print("H:");
-//      Serial.print(h);
-//      Serial.println("%");
-//      Serial.print("M:");
-//      Serial.print(moisValue);
-//      Serial.print(" ");
-//      Serial.print(mois2Value);
-//      Serial.print(" ");
-//      Serial.println(mois3Value);
-//      
-//      Serial.print("Writing to TermoHu.txt...");
+     Serial.println(time);
+     Serial.print("T:");
+     Serial.print(t);
+     Serial.print("C ");
+     Serial.print("H:");
+     Serial.print(h);
+     Serial.println("%");
+     Serial.print("M:");
+     Serial.print(moisValue);
+     Serial.print(" ");
+     Serial.print(mois2Value);
+     Serial.print(" ");
+     Serial.println(mois3Value);
+     
+     Serial.print("Writing to TermoHu.txt...");
       time = millis();
       myFile.println(time);
       myFile.print(t);
@@ -68,26 +81,9 @@ void loop() {
       myFile.print("M3: ");
       myFile.println(mois3Value);
       myFile.close();
-//      Serial.println("done.");
+     Serial.println("done.");
     } else {
       Serial.println("error opening test.txt");
     }
-  }
-
-  
+  } 
 }
-
-
-
-
-/*
-  SD card read/write
-
- This example shows how to read and write data to and from an SD card file
- The circuit:
- * SD card attached to SPI bus as follows:
- ** MOSI - pin 11
- ** MISO - pin 12
- ** CLK - pin 13
- ** CS - pin 4 (for MKRZero SD: SDCARD_SS_PIN)
- */
