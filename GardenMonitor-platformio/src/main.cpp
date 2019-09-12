@@ -1,4 +1,3 @@
-#include <Arduino.h>
 #include <Adafruit_Sensor.h>
 #include <DHT.h>
 #include <SPI.h>
