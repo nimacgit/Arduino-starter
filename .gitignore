@@ -3,6 +3,7 @@
 .vscode
 .vscode/
 .vscode/*
+.pio
 # Object files
 *.o
 *.ko
