@@ -3,20 +3,29 @@
 #include <SPI.h>
 #include <SD.h>
 #include <string.h>
+#include <LiquidCrystal.h>
 
 /*
- * SD card: 5V
- ** MOSI - pin 11
- ** MISO - pin 12
- ** CLK - pin 13
- ** CS - pin 4 (for MKRZero SD: SDCARD_SS_PIN)
+SD card: 5V
+MOSI - pin 11
+MISO - pin 12
+CLK - pin 13
+CS - pin 4 (for MKRZero SD: SDCARD_SS_PIN)
 
- DHT: 5V
+DHT: 5V
 
- moisSensor: 3.3V
+moisSensor: 3.3V
+
+LCD: 5V
+K - GND
+A - 5V
+Rw - GND
+V0 - potentio
+VLD - 5V
+VSS - GND
 */
 
-#define DHT11_PIN 8
+#define DHT11_PIN 3
 #define MOIS_PIN A1
 #define MOIS2_PIN A2
 #define MOIS3_PIN A3
@@ -24,6 +33,14 @@
 #define GREENPIN 6
 #define BLUEPIN 7
 #define interruptPin 2
+#define RsPIN 10
+#define EnPIN 9
+#define D4PIN 8
+#define D5PIN 7
+#define D6PIN 6
+#define D7PIN 5
+
+LiquidCrystal  lcd(RsPIN, EnPIN, DPIN, D5PIN, D6PIN, D7PIN);
 
 File myFile;
 DHT DHT_sens(DHT11_PIN, DHT11);
@@ -45,22 +62,21 @@ void ejectState();
 void errorState();
 void okState();
 void writeState();
+void displayState();
+void initSD();
+void initLCD();
+void initLED();
+void initDHT();
+void initInterrupt();
 
 void setup()
 {
-  pinMode(GREENPIN, OUTPUT);
-  pinMode(REDPIN, OUTPUT);
-  errorState();
-  DHT_sens.begin();
-  pinMode(interruptPin, INPUT_PULLUP);
-  attachInterrupt(digitalPinToInterrupt(interruptPin), changeSD, FALLING);
+  initLED();
+  initDHT();
+  initInterrupt();
+  initLCD();
   Serial.begin(9600);
-  Serial.print("Initializing SD card...");
-  while(!SD.begin(4)){
-    Serial.println("initialization failed!");
-    delay(1000);
-  }
-  Serial.println("initialization done.");
+  initSD();
   time_old = millis();
 }
 
@@ -145,6 +161,23 @@ void printState(){
   Serial.print("Writing to TermoHu.txt...");
 }
 
+void displayState(){
+  lcd.setCursor(0, 0);
+    lcd.print("T:");
+    lcd.print(t);
+    lcd.print("C ");
+    lcd.print("H:");
+    lcd.print(h);
+    lcd.print("%");
+    lcd.setCursor(0, 1);
+    lcd.print("M:");
+    lcd.print(moisValue);
+    lcd.print(" ");
+    lcd.print(mois2Value);
+    lcd.print(" ");
+    lcd.print(mois3Value);
+}
+
 void ejectState(){
   digitalWrite(REDPIN, HIGH);
   digitalWrite(GREENPIN, LOW);
@@ -175,4 +208,32 @@ void changeSD(){
   } else{
     writeState();
   }
+}
+
+void initLED(){
+  pinMode(GREENPIN, OUTPUT);
+  pinMode(REDPIN, OUTPUT);
+  errorState();
+}
+void initDHT(){
+  DHT_sens.begin();
+}
+
+void initInterrupt(){
+  pinMode(interruptPin, INPUT_PULLUP);
+  attachInterrupt(digitalPinToInterrupt(interruptPin), changeSD, FALLING);
+}
+
+void initSD(){
+  Serial.print("Initializing SD card...");
+  while(!SD.begin(4)){
+    Serial.println("initialization failed!");
+    delay(1000);
+  }
+  Serial.println("initialization done.");
+}
+
+void initLCD(){
+  lcd.begin(16, 2);
+  lcd.clear();
 }
