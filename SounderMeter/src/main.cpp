@@ -6,6 +6,7 @@ void drawScreen(byte buffer2[]);
 void drawhi();
 void display(boolean state[8][8]);
 void drawCircle();
+bool shouldAlert(int sound);
 
 #define ROW_1 6
 #define ROW_2 3
@@ -60,7 +61,7 @@ byte W[] = {B00000000,B10000010,B10010010,B01010100,B01010100,B00101000,B0000000
 byte X[] = {B00000000,B01000010,B00100100,B00011000,B00011000,B00100100,B01000010,B00000000};
 byte Y[] = {B00000000,B01000100,B00101000,B00010000,B00010000,B00010000,B00010000,B00000000};
 byte Z[] = {B00000000,B00111100,B00000100,B00001000,B00010000,B00100000,B00111100,B00000000};
-
+unsigned long time = 0;
 float timeCount = 0;
 
 unsigned char biglove[8][8] =     //the big "heart"   
@@ -103,6 +104,7 @@ void setup() {
   pinMode(A3, OUTPUT);
   pinMode(A2, OUTPUT);
   pinMode(A1, OUTPUT);
+  Clear();
 }
  
 void loop() { 
@@ -125,15 +127,25 @@ void loop() {
       1,0,0,0,0,1,0,0
   };
   int sound = analogRead(A0);
-  // Clear();
-  if(sound > 100){
-    Clear();
+  if(shouldAlert(sound)){
     // drawScreen(A);
     // drawhi();
     // display(state);
-    drawCircle();
+    for(int k = 0; k < 3; k++){
+      drawCircle();
+    }
     Serial.println(sound);
   }
+}
+
+bool shouldAlert(int sound){
+  if(sound>100){
+    if(millis() > time + 500 ){
+      time = millis();
+      return true;
+    }
+  }
+  return false;
 }
 
 struct Pair
@@ -154,15 +166,13 @@ void drawCircle(){
       state[i][j] = false;
     }
   }
-  Pair locations[12] = {Pair(2,4), Pair(2,5), Pair(3,6), Pair(4,7), Pair(5,7), Pair(6,6), Pair(7,5), Pair(7,4), Pair(6,3),
-   Pair(5,2), Pair(4,2), Pair(3,3)};
+  Pair locations[12] = {Pair(1,3), Pair(1,4), Pair(2,5), Pair(3,6), Pair(4,6), Pair(5,5), Pair(6,4),
+  Pair(6,3), Pair(5,2), Pair(4,1), Pair(3,1), Pair(2,2)};
   for(int i = 0; i < 12; i++){
     int x = locations[i].x;
     int y = locations[i].y;
     state[x][y] = true;
-    for(int j = 0; j < 10; j++){  
-      display(state);
-    }
+    display(state);
     state[x][y] = false;
   }
 }
@@ -171,10 +181,11 @@ void drawCircle(){
 void turnon(int x, int y){
     digitalWrite(cols[y], HIGH);
     digitalWrite(rows[x], LOW);
-    delay(1);
+}
+
+void turnoff(int x, int y){
     digitalWrite(cols[y], LOW);
     digitalWrite(rows[x], HIGH);
-    delay(1);
 }
 
 void drawhi(){
@@ -194,7 +205,10 @@ void display(bool state[8][8]){
   for(int i = 0; i < 8; i++){
     for(int j = 0; j < 8; j++){
       if(state[i][j]){
-        turnon(7 - j, 7 - i);
+        for(int k = 0; k < 2000; k++){
+          turnon(7- j, 7 - i);
+        }
+        turnoff(7- j, 7 - i);
       }
     }
   }
