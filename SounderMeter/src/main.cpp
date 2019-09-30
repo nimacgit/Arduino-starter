@@ -35,7 +35,7 @@ void setup() {
     pinMode(rows[i],OUTPUT);  
     pinMode(cols[i],OUTPUT);  
   }  
-  Serial.begin(9600); // setup serial
+  Serial.begin(9600);
   clear();
 }
 
@@ -68,6 +68,10 @@ struct Pair
       y = y1;
     }
 };
+
+void drawAlert(){
+  
+}
 
 void drawCircle(){
   bool state[8][8];
