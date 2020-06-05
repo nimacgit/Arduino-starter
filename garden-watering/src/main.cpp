@@ -4,9 +4,7 @@
 #include <LiquidCrystal.h>
 
 #define RELAYPIN 8
-#define MOIS1_PIN A0
-#define MOIS2_PIN A1
-#define MOIS3_PIN A2
+#define MAX_SENSORS 100
 /*
 LCD: 5V
 K - GND
@@ -25,9 +23,11 @@ VSS - GND
 #define DRYMOISMIN 400
 #define DRYMOISMAX 600
 
-int mois1Value;
-int mois2Value;
-int mois3Value;
+uint8_t mois_pins[] = {A0, A1, A2};
+int mois_values[MAX_SENSORS];
+int number_of_sensors = *(&mois_pins + 1) - mois_pins;
+int watering_try = 0;
+int watering_delay = 0;
 LiquidCrystal  lcd(RsPIN, EnPIN, D4PIN, D5PIN, D6PIN, D7PIN);
 
 void setup(){
@@ -38,27 +38,43 @@ void setup(){
 }
 
 void loop() {
-  mois1Value = analogRead(MOIS1_PIN);
-  mois2Value = analogRead(MOIS2_PIN);
-  mois3Value = analogRead(MOIS3_PIN);
+  for(int i = 0; i < number_of_sensors; i++){
+    mois_values[i] = analogRead(mois_pins[i]);
+  }
   lcd.setCursor(0, 0);
-  lcd.print(mois1Value);
-  lcd.print("-");
-  lcd.print(mois2Value);
-  lcd.print("-");
-  lcd.print(mois3Value);
+  for(int i = 0; i < number_of_sensors; i++){
+    lcd.print(mois_values[i]);
+    lcd.print("-");
+    Serial.print(mois_values[i]);
+    Serial.print("\n");
+  }
 
-  Serial.print(mois1Value);
-  Serial.print("\n");
-  Serial.print(mois2Value);
-  Serial.print("\n");
-  Serial.print(mois3Value);
-  Serial.print("\n");
-  if((mois1Value < DRYMOISMAX && mois1Value > DRYMOISMIN) || (mois2Value < DRYMOISMAX && mois2Value > DRYMOISMIN) || (mois3Value < DRYMOISMAX && mois3Value > DRYMOISMIN)){
-    digitalWrite(RELAYPIN, LOW);
+
+  bool is_dry = false;
+  bool is_one_wet = false;
+  for(int i = 0; i < number_of_sensors; i++){
+    if(mois_values[i] > DRYMOISMIN && mois_values[i] < DRYMOISMAX){
+      is_dry = true;
+    }
+    if(mois_values[i] < 100){
+      is_one_wet = true;
+    }
+  }
+  if(is_dry && !is_one_wet){
+    if(watering_delay > 0){
+      watering_delay -= 1;
+    }else{
+      watering_try += 1;
+      digitalWrite(RELAYPIN, LOW);
+      if(watering_try >= 10){
+        watering_delay = 300;
+        watering_try = 0;
+      }
+    }
   }
   else{
     digitalWrite(RELAYPIN,HIGH);
+    watering_delay = max(watering_delay-1, 0);
   }
   delay(1000);
 
