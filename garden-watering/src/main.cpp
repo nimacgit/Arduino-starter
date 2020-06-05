@@ -58,18 +58,14 @@ void loop() {
     }
     if(mois_values[i] < 100){
       is_one_wet = true;
-    }
+    } 
   }
-  if(is_dry && !is_one_wet){
-    if(watering_delay > 0){
-      watering_delay -= 1;
-    }else{
-      watering_try += 1;
-      digitalWrite(RELAYPIN, LOW);
-      if(watering_try >= 10){
-        watering_delay = 300;
-        watering_try = 0;
-      }
+  if(is_dry && !is_one_wet && watering_delay == 0){
+    watering_try += 1;
+    digitalWrite(RELAYPIN, LOW);
+    if(watering_try >= 10){
+      watering_delay = 300;
+      watering_try = 0;
     }
   }
   else{
