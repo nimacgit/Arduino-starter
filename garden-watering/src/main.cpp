@@ -3,8 +3,6 @@
 #include <SPI.h>
 #include <LiquidCrystal.h>
 
-#define RELAYPIN 8
-#define MAX_SENSORS 100
 /*
 LCD: 5V
 K - GND
@@ -20,16 +18,18 @@ VSS - GND
 #define D5PIN 5
 #define D6PIN 6
 #define D7PIN 7
-#define DRYMOISMIN 450
-#define DRYMOISMAX 650
-#define WETMOIS 250
+#define DRYMOISMIN 400
+#define DRYMOISMAX 600
+#define WETMOIS 300
 #define NORMALWATERINGTRY 10
 #define NORMALWATERINGDELAY 300
 #define LOWWATERINGTRY 3
 #define LOWWATERINGDELAY 600
 #define LOWWATERMODE false
+#define RELAYPIN 8
+#define MAX_SENSORS 100
 
-uint8_t mois_pins[] = {A0, A1, A2};
+uint8_t mois_pins[] = {A0, A1};
 int mois_values[MAX_SENSORS];
 int number_of_sensors = *(&mois_pins + 1) - mois_pins;
 int watering_try = 0;
@@ -44,6 +44,8 @@ void setup(){
 }
 
 void loop() {
+  Serial.print(number_of_sensors);
+  Serial.print("\n");
   for(int i = 0; i < number_of_sensors; i++){
     mois_values[i] = analogRead(mois_pins[i]);
   }
@@ -86,5 +88,4 @@ void loop() {
     watering_delay = max(watering_delay-1, 0);
   }
   delay(1000);
-
 }
