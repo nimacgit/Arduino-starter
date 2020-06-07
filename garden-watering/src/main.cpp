@@ -20,8 +20,14 @@ VSS - GND
 #define D5PIN 5
 #define D6PIN 6
 #define D7PIN 7
-#define DRYMOISMIN 400
-#define DRYMOISMAX 600
+#define DRYMOISMIN 450
+#define DRYMOISMAX 650
+#define WETMOIS 250
+#define NORMALWATERINGTRY 10
+#define NORMALWATERINGDELAY 300
+#define LOWWATERINGTRY 3
+#define LOWWATERINGDELAY 600
+#define LOWWATERMODE false
 
 uint8_t mois_pins[] = {A0, A1, A2};
 int mois_values[MAX_SENSORS];
@@ -56,16 +62,23 @@ void loop() {
     if(mois_values[i] > DRYMOISMIN && mois_values[i] < DRYMOISMAX){
       is_dry = true;
     }
-    if(mois_values[i] < 100){
+    if(mois_values[i] < WETMOIS){
       is_one_wet = true;
     } 
   }
   if(is_dry && !is_one_wet && watering_delay == 0){
     watering_try += 1;
     digitalWrite(RELAYPIN, LOW);
-    if(watering_try >= 10){
-      watering_delay = 300;
-      watering_try = 0;
+    if(LOWWATERMODE){
+      if(watering_try >= LOWWATERINGTRY){
+        watering_delay = LOWWATERINGDELAY;
+        watering_try = 0;
+      }
+    }else{
+      if(watering_try >= NORMALWATERINGTRY){
+        watering_delay = NORMALWATERINGDELAY;
+        watering_try = 0;
+      }
     }
   }
   else{
