@@ -21,7 +21,7 @@ VSS - GND
 #define DRYMOISMIN 400
 #define DRYMOISMAX 600
 #define WETMOIS 300
-#define NORMALWATERINGTRY 10
+#define NORMALWATERINGTRY 5
 #define NORMALWATERINGDELAY 300
 #define LOWWATERINGTRY 3
 #define LOWWATERINGDELAY 600
@@ -29,9 +29,11 @@ VSS - GND
 #define RELAYPIN 8
 #define MAX_SENSORS 100
 
-uint8_t mois_pins[] = {A0, A1};
+uint8_t mois_analog_pins[] = {A0, A1};
+uint8_t mois_digital_pins[] = {10, 11};
 int mois_values[MAX_SENSORS];
-int number_of_sensors = *(&mois_pins + 1) - mois_pins;
+int mois_state[MAX_SENSORS];
+int number_of_sensors = *(&mois_analog_pins + 1) - mois_analog_pins;
 int watering_try = 0;
 int watering_delay = 0;
 LiquidCrystal  lcd(RsPIN, EnPIN, D4PIN, D5PIN, D6PIN, D7PIN);
@@ -39,6 +41,9 @@ LiquidCrystal  lcd(RsPIN, EnPIN, D4PIN, D5PIN, D6PIN, D7PIN);
 void setup(){
   Serial.begin(9600);
   pinMode(RELAYPIN, OUTPUT);
+  for(int i = 0; i < number_of_sensors; i++){
+    pinMode(mois_digital_pins[i], INPUT);
+  }
   lcd.begin(16,2);
   lcd.clear();
 }
@@ -47,8 +52,10 @@ void loop() {
   Serial.print(number_of_sensors);
   Serial.print("\n");
   for(int i = 0; i < number_of_sensors; i++){
-    mois_values[i] = analogRead(mois_pins[i]);
+    mois_values[i] = analogRead(mois_analog_pins[i]);
+    mois_state[i] = digitalRead(mois_digital_pins[i]);
   }
+
   lcd.setCursor(0, 0);
   for(int i = 0; i < number_of_sensors; i++){
     lcd.print(mois_values[i]);
@@ -61,12 +68,18 @@ void loop() {
   bool is_dry = false;
   bool is_one_wet = false;
   for(int i = 0; i < number_of_sensors; i++){
-    if(mois_values[i] > DRYMOISMIN && mois_values[i] < DRYMOISMAX){
+    // if(mois_values[i] > DRYMOISMIN && mois_values[i] < DRYMOISMAX){
+    //   is_dry = true;
+    // }
+    // if(mois_values[i] < WETMOIS){
+    //   is_one_wet = true;
+    // }
+    if(mois_state[i] == LOW){
+      is_one_wet = true;
+    }
+    if(mois_state[i] == HIGH and mois_values[i] < 650){
       is_dry = true;
     }
-    if(mois_values[i] < WETMOIS){
-      is_one_wet = true;
-    } 
   }
   if(is_dry && !is_one_wet && watering_delay == 0){
     watering_try += 1;
