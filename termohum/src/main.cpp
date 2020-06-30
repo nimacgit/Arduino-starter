@@ -45,11 +45,13 @@ void loop() {
   lcd.print("%");
 
   // Printing the results on the serial monitor
-  Serial.print("Temperature = ");
+  // Serial.print("Temperature = ");
   Serial.print(t);
-  Serial.print(" *C ");
-  Serial.print("    Humidity = ");
+  Serial.print("\t");
+  // Serial.print(" *C ");
+  // Serial.print("    Humidity = ");
   Serial.print(h);
-  Serial.println(" % ");
+  Serial.print("\n");
+  // Serial.println(" % ");
   delay(2000);
 }
