@@ -21,10 +21,10 @@ VSS - GND
 #define DRYMOISMIN 400
 #define DRYMOISMAX 600
 #define WETMOIS 300
-#define NORMALWATERINGTRY 5
-#define NORMALWATERINGDELAY 300
-#define LOWWATERINGTRY 3
-#define LOWWATERINGDELAY 600
+// #define NORMALWATERINGTRY 5
+// #define LOWWATERINGTRY 3
+#define NORMAL_WATERING_DELAY 300
+#define LOW_WATERING_DELAY 600
 #define LOWWATERMODE false
 #define RELAYPIN 8
 #define MAX_AUTO_WATER_TRY 2
@@ -38,7 +38,7 @@ uint8_t mois_digital_pins[] = {9, 10};
 int mois_values[MAX_SENSORS];
 int mois_state[MAX_SENSORS];
 int number_of_sensors = *(&mois_analog_pins + 1) - mois_analog_pins;
-int watering_try = 0;
+// int watering_try = 0;
 int watering_delay = 0;
 int button_state = 0;
 int auto_water_try = 1;
@@ -48,6 +48,8 @@ bool auto_watering = false;
 unsigned long last_time_watering = 0;
 int last_time_watering_amount = 0;
 LiquidCrystal  lcd(RsPIN, EnPIN, D4PIN, D5PIN, D6PIN, D7PIN);
+int normal_watering_delay = NORMAL_WATERING_DELAY;
+int low_watering_delay = LOW_WATERING_DELAY;
 
 void setup(){
   Serial.begin(9600);
@@ -63,19 +65,9 @@ void setup(){
 
 
 void loop() {
-
   button_state = digitalRead(BUTTON_PIN);
   if (button_state == HIGH) {
     switch (auto_water_delay){
-      case 300:
-      if(auto_water_try < MAX_AUTO_WATER_TRY){
-        auto_water_try += 1;
-      }else{
-        auto_water_try = 1;
-        auto_water_delay = 600;
-      }
-      break;
-
       case 600:
       if(auto_water_try < MAX_AUTO_WATER_TRY){
         auto_water_try += 1;
@@ -94,16 +86,39 @@ void loop() {
       }
       break;
 
-      case 3600:
+      case 7200:
       if(auto_water_try < MAX_AUTO_WATER_TRY){
         auto_water_try += 1;
       }else{
         auto_water_try = 1;
-        auto_water_delay = 300;
+        auto_water_delay = 43200;
+      }
+      break;
+
+      case 43200:
+      if(auto_water_try < MAX_AUTO_WATER_TRY){
+        auto_water_try += 1;
+      }else{
+        auto_water_try = 1;
+        auto_water_delay = 600;
       }
       break;
     }
   }
+
+  if((last_time_watering + auto_water_delay * (unsigned long)1000) < millis()){
+    if(last_time_watering_amount < auto_water_try){
+      auto_watering = true;
+      last_time_watering_amount += 1;
+    }else{
+      auto_watering = false;
+      last_time_watering_amount = 0;
+      last_time_watering = millis();
+    }
+  }else{
+    auto_watering = false;
+  }
+
 
   for(int i = 0; i < number_of_sensors; i++){
     mois_values[i] = analogRead(mois_analog_pins[i]);
@@ -126,38 +141,20 @@ void loop() {
       is_dry = true;
     }
   }
+  normal_watering_delay = (int)(auto_water_delay / 3);
+  low_watering_delay = (int)(2 * auto_water_delay / 3);
   
   if(is_dry && !is_one_wet && watering_delay == 0){
-    watering_try += 1;
     moise_watering = true;
     if(LOWWATERMODE){
-      if(watering_try >= LOWWATERINGTRY){
-        watering_delay = LOWWATERINGDELAY;
-        watering_try = 0;
-      }
+      watering_delay = low_watering_delay;
     }else{
-      if(watering_try >= NORMALWATERINGTRY){
-        watering_delay = NORMALWATERINGDELAY;
-        watering_try = 0;
-      }
+      watering_delay = normal_watering_delay;
     }
   }
   else{
     moise_watering = false;
     watering_delay = max(watering_delay-1, 0);
-  }
-
-  if((last_time_watering + auto_water_delay * (unsigned long)1000) < millis()){
-    if(last_time_watering_amount < auto_water_try){
-      auto_watering = true;
-      last_time_watering_amount += 1;
-    }else{
-      auto_watering = false;
-      last_time_watering_amount = 0;
-      last_time_watering = millis();
-    }
-  }else{
-    auto_watering = false;
   }
 
   if(debug){
@@ -183,8 +180,17 @@ void loop() {
     lcd.print("-");
   }
   lcd.setCursor(0, 1);
-  lcd.print(auto_water_delay/60);
-  lcd.print(" min ");
+  if(auto_water_delay > 3600){
+    lcd.print((int)(auto_water_delay/3600));
+    if(auto_water_delay % 3600 > 0){
+      lcd.print(":");
+      lcd.print((auto_water_delay % 3600)/60);
+    }
+    lcd.print(" H ");
+  }else{
+    lcd.print(auto_water_delay/60);
+    lcd.print(" M ");
+  }
   lcd.print(auto_water_try);
   lcd.print(" try ");
 
