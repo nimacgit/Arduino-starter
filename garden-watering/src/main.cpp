@@ -27,7 +27,6 @@ VSS - GND
 #define LOW_WATERING_DELAY 600
 #define LOWWATERMODE false
 #define RELAYPIN 8
-#define MAX_AUTO_WATER_TRY 2
 #define MAX_SENSORS 100
 #define BUTTON_PIN 13
 #define debug false
@@ -38,16 +37,14 @@ uint8_t mois_digital_pins[] = {9, 10};
 int mois_values[MAX_SENSORS];
 int mois_state[MAX_SENSORS];
 int number_of_sensors = *(&mois_analog_pins + 1) - mois_analog_pins;
-// int watering_try = 0;
-int watering_delay = 0;
 int button_state = 0;
-int auto_water_try = 1;
-unsigned long auto_water_delay = 300;
+unsigned long moise_watering_delay = 200;
+unsigned long auto_water_delay = 600;
 bool moise_watering = false;
 bool auto_watering = false;
-unsigned long last_time_watering = 0;
-int last_time_watering_amount = 0;
-LiquidCrystal  lcd(RsPIN, EnPIN, D4PIN, D5PIN, D6PIN, D7PIN);
+unsigned long last_time_auto_watering = 0;
+unsigned long last_time_moise_watering = 0;
+LiquidCrystal lcd(RsPIN, EnPIN, D4PIN, D5PIN, D6PIN, D7PIN);
 int normal_watering_delay = NORMAL_WATERING_DELAY;
 int low_watering_delay = LOW_WATERING_DELAY;
 
@@ -69,52 +66,39 @@ void loop() {
   if (button_state == HIGH) {
     switch (auto_water_delay){
       case 600:
-      if(auto_water_try < MAX_AUTO_WATER_TRY){
-        auto_water_try += 1;
-      }else{
-        auto_water_try = 1;
-        auto_water_delay = 1800;
-      }
+      auto_water_delay = 1800;
       break;
 
       case 1800:
-      if(auto_water_try < MAX_AUTO_WATER_TRY){
-        auto_water_try += 1;
-      }else{
-        auto_water_try = 1;
-        auto_water_delay = 3600;
-      }
+      auto_water_delay = 3600;
+      break;
+
+      case 3600:
+      auto_water_delay = 7200;
       break;
 
       case 7200:
-      if(auto_water_try < MAX_AUTO_WATER_TRY){
-        auto_water_try += 1;
-      }else{
-        auto_water_try = 1;
-        auto_water_delay = 43200;
-      }
+      auto_water_delay = 21600;
+      break;
+
+      case 21600:
+      auto_water_delay = 43200;
       break;
 
       case 43200:
-      if(auto_water_try < MAX_AUTO_WATER_TRY){
-        auto_water_try += 1;
-      }else{
-        auto_water_try = 1;
-        auto_water_delay = 600;
-      }
+      auto_water_delay = 600;
       break;
     }
   }
+  if(LOWWATERMODE){
+    moise_watering_delay = (unsigned long)(2 * auto_water_delay / 3);
+  }else{
+    moise_watering_delay = (unsigned long)(auto_water_delay / 3);
+  }
 
-  if((last_time_watering + auto_water_delay * (unsigned long)1000) < millis()){
-    if(last_time_watering_amount < auto_water_try){
-      auto_watering = true;
-      last_time_watering_amount += 1;
-    }else{
-      auto_watering = false;
-      last_time_watering_amount = 0;
-      last_time_watering = millis();
-    }
+  if(last_time_auto_watering + auto_water_delay * (unsigned long)1000 < millis()){
+    auto_watering = true;
+    last_time_auto_watering = millis();
   }else{
     auto_watering = false;
   }
@@ -141,20 +125,14 @@ void loop() {
       is_dry = true;
     }
   }
-  normal_watering_delay = (int)(auto_water_delay / 3);
-  low_watering_delay = (int)(2 * auto_water_delay / 3);
+
   
-  if(is_dry && !is_one_wet && watering_delay == 0){
+  if(!auto_watering && is_dry && !is_one_wet && (last_time_moise_watering + moise_watering_delay * (unsigned long)1000 < millis())){
     moise_watering = true;
-    if(LOWWATERMODE){
-      watering_delay = low_watering_delay;
-    }else{
-      watering_delay = normal_watering_delay;
-    }
+    last_time_moise_watering = millis();
   }
   else{
     moise_watering = false;
-    watering_delay = max(watering_delay-1, 0);
   }
 
   if(debug){
@@ -166,11 +144,11 @@ void loop() {
     Serial.print("\t");
     Serial.print(auto_watering);
     Serial.print("\n");
-    Serial.print(last_time_watering);
+    Serial.print(last_time_auto_watering);
+    Serial.print("\t");
+    Serial.print(last_time_moise_watering);
     Serial.print("\t");
     Serial.print(millis());
-    Serial.print("\n");
-    Serial.print(last_time_watering_amount);
     Serial.print("\n");
   }
 
@@ -180,7 +158,7 @@ void loop() {
     lcd.print("-");
   }
   lcd.setCursor(0, 1);
-  if(auto_water_delay > 3600){
+  if(auto_water_delay >= 3600){
     lcd.print((int)(auto_water_delay/3600));
     if(auto_water_delay % 3600 > 0){
       lcd.print(":");
@@ -191,9 +169,11 @@ void loop() {
     lcd.print(auto_water_delay/60);
     lcd.print(" M ");
   }
-  lcd.print(auto_water_try);
-  lcd.print(" try ");
-
+  lcd.print((int)((last_time_auto_watering + auto_water_delay * (unsigned long)1000 - millis())/60000));
+  lcd.print(" ");
+  lcd.print((int)((last_time_moise_watering + moise_watering_delay * (unsigned long)1000 - millis())/60000));
+  lcd.print(" ");
+  
   if(moise_watering || auto_watering){
     digitalWrite(RELAYPIN, LOW);
   }else{
