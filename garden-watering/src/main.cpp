@@ -34,11 +34,11 @@ VSS - GND
 #define MS_2H 7200000UL
 #define MS_6H 21600000UL
 #define MS_12H 43200000UL
-#define RELAY_DELAY_MS 1000UL
-#define MAX_MOIS_PROPER_VALUE 750
+#define RELAY_DELAY_MS 3000UL
+#define MAX_MOIS_PROPER_VALUE 1000
 
-uint8_t mois_analog_pins[] = {A0, A1};
-uint8_t mois_digital_pins[] = {9, 10};
+uint8_t mois_analog_pins[] = {};// {A0, A1};
+uint8_t mois_digital_pins[] = {};//{9, 10};
 int mois_values[MAX_SENSORS];
 int mois_state[MAX_SENSORS];
 int number_of_sensors = *(&mois_analog_pins + 1) - mois_analog_pins;
@@ -71,10 +71,10 @@ void show_time(unsigned long t, LiquidCrystal lcd){
       lcd.print(":");
       lcd.print((t % MS_1H)/MS_1MIN);
     }
-    lcd.print(" H ");
+    lcd.print("H ");
   }else{
     lcd.print(t/MS_1MIN);
-    lcd.print(" M ");
+    lcd.print("M ");
   }
 }
 void loop() {
@@ -115,9 +115,9 @@ void loop() {
   }
 
   if(LOWWATERMODE){
-    moise_watering_delay = (unsigned long)(2UL * auto_water_delay / 3UL);
+    moise_watering_delay = (unsigned long)(2UL * auto_water_delay / 5UL);
   }else{
-    moise_watering_delay = (unsigned long)(auto_water_delay / 3UL);
+    moise_watering_delay = (unsigned long)(auto_water_delay / 5UL);
   }
 
   for(int i = 0; i < number_of_sensors; i++){
@@ -137,7 +137,7 @@ void loop() {
     if(mois_state[i] == LOW){
       is_one_wet = true;
     }
-    if(mois_state[i] == HIGH and mois_values[i] < MAX_MOIS_PROPER_VALUE){
+    if((mois_state[i] == HIGH && mois_values[i] < MAX_MOIS_PROPER_VALUE)){
       is_dry = true;
     }
   }
@@ -151,7 +151,7 @@ void loop() {
   
   if(moise_watering_delay < time_now - last_time_moise_watering){
     last_time_moise_watering = time_now;
-    if(is_dry && !is_one_wet){
+    if((is_dry && !is_one_wet) || number_of_sensors == 0){
       moise_watering = true;
     }
   }
